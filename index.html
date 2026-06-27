@@ -529,7 +529,7 @@ footer{background:var(--noir);padding:70px 0 36px;border-top:1px solid var(--or-
       <div class="merci" id="merci">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M20 6 9 17l-5-5"/></svg></div>
         <h3>Demande bien reçue</h3>
-        <p>Merci pour votre confiance. Je reviens vers vous sous 24h ouvrées pour confirmer la disponibilité et vous proposer la meilleure formule.</p>
+        <p>Merci pour votre confiance. Votre demande m'a été transmise : je la valide et vous recevez votre <strong>e-mail de confirmation</strong> sous 24h ouvrées. Pour une réponse encore plus rapide, finalisez en un clic sur WhatsApp.</p>
         <a href="#" id="waBtn" class="btn btn-gold" target="_blank" rel="noopener">Confirmer sur WhatsApp</a>
       </div>
     </div>
@@ -611,12 +611,20 @@ footer{background:var(--noir);padding:70px 0 36px;border-top:1px solid var(--or-
 /* ====== CONFIG — à personnaliser ====== */
 const WHATSAPP_NUMBER = "33628966170"; // numéro WhatsApp au format international, sans le +
 
-// Notification par e-mail (facultatif mais recommandé) :
-// 1) Créez un compte GRATUIT sur https://web3forms.com
-// 2) Indiquez votre adresse contact@meyophy.fr -> vous recevez une "Access Key"
-// 3) Collez cette clé ci-dessous. Tant qu'elle est vide, l'e-mail est désactivé
-//    et seule la confirmation WhatsApp fonctionne.
-const WEB3FORMS_KEY = ""; // ex : "a1b2c3d4-...."
+// Adresse e-mail sur laquelle VOUS recevez les demandes de réservation.
+const OWNER_EMAIL = "meyophiy@gmail.com";
+
+// ====== NOTIFICATIONS E-MAIL — 1 SEULE ÉTAPE POUR TOUT ACTIVER ======
+// 1) Allez sur https://web3forms.com  (gratuit, illimité, aucune carte bancaire)
+// 2) Saisissez votre e-mail meyophiy@gmail.com -> vous recevez une "Access Key"
+//    par mail (cliquez le lien de vérification dans ce mail).
+// 3) Collez la clé entre les guillemets ci-dessous, sauvegardez, et c'est tout.
+//
+// Tant que la clé est vide, le site fonctionne quand même : la cliente est
+// redirigée vers WhatsApp pour finaliser. Dès que la clé est remplie, VOUS
+// recevez en plus un e-mail détaillé à chaque demande, avec un bouton
+// "Confirmer ce RDV" qui ouvre l'e-mail de confirmation déjà rédigé pour elle.
+const WEB3FORMS_KEY = "49e1a2b3-1888-497c-80ba-d483677a24ed"; // ex : "a1b2c3d4-e5f6-...."
 
 // --- Vos disponibilités, par jour de la semaine ---
 // 0 = dimanche, 1 = lundi, 2 = mardi, 3 = mercredi, 4 = jeudi, 5 = vendredi, 6 = samedi
@@ -907,7 +915,25 @@ form.addEventListener('submit', async (e) => {
     + `Message : ${encodeURIComponent(data.msg)}`;
   document.getElementById('waBtn').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${txt}`;
 
-  // Notification par e-mail vers contact@meyophy.fr (si une clé Web3Forms est configurée)
+  // Lien "Confirmer ce RDV" : ouvre un e-mail de confirmation déjà rédigé,
+  // adressé à la cliente. La maquilleuse n'a plus qu'à cliquer "Envoyer".
+  const sujetConf = `Confirmation de votre réservation — M&E Yophiy`;
+  const corpsConf =
+      `Bonjour ${data.prenom},%0D%0A%0D%0A`
+    + `C'est confirmé ! J'ai le plaisir de valider votre réservation :%0D%0A%0D%0A`
+    + `• Prestation : ${data.presta}%0D%0A`
+    + `• Date : ${data.date}%0D%0A`
+    + `• Créneau : ${data.creneau}%0D%0A`
+    + `• Secteur : ${data.secteur}%0D%0A`
+    + `• Adresse : ${data.lieu}%0D%0A%0D%0A`
+    + `Je reste à votre disposition d'ici là pour toute question.%0D%0A`
+    + `À très bientôt,%0D%0A%0D%0AÉvelyne — M&E Yophiy%0D%0A06 28 96 61 70`;
+  const lienConfirmation =
+    `mailto:${encodeURIComponent(data.email)}`
+    + `?subject=${encodeURIComponent(sujetConf)}`
+    + `&body=${corpsConf}`;
+
+  // Notification par e-mail vers la maquilleuse (si une clé Web3Forms est configurée)
   if (WEB3FORMS_KEY){
     try {
       await fetch('https://api.web3forms.com/submit', {
@@ -916,7 +942,11 @@ form.addEventListener('submit', async (e) => {
         body: JSON.stringify({
           access_key: WEB3FORMS_KEY,
           subject: `Nouvelle réservation — ${data.prenom} · ${data.secteur} · ${data.date}`,
-          from_name: 'Site M&E Yophiy',
+          from_name: 'Réservations M&E Yophiy',
+          // Permet de répondre directement à la cliente (= la confirmer) en cliquant "Répondre".
+          replyto: data.email,
+          '➡️ Pour confirmer': 'Cliquez le lien "Confirmer ce RDV" ci-dessous, OU répondez simplement à cet e-mail.',
+          'Confirmer ce RDV': lienConfirmation,
           Prénom: data.prenom,
           Secteur: data.secteur,
           Prestation: data.presta,
