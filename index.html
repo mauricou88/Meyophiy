@@ -612,6 +612,8 @@ footer{background:var(--noir);padding:70px 0 36px;border-top:1px solid var(--or-
   </div>
 </div>
 
+<!-- SDK EmailJS (envoi de l'e-mail de confirmation habillé à la cliente) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 /* ====== CONFIG — à personnaliser ====== */
 const WHATSAPP_NUMBER = "33628966170"; // numéro WhatsApp au format international, sans le +
@@ -631,6 +633,24 @@ const OWNER_EMAIL = "meyophiy@gmail.com";
 // "Confirmer ce RDV" qui ouvre l'e-mail de confirmation déjà rédigé pour elle.
 const WEB3FORMS_KEY = "49e1a2b3-1888-497c-80ba-d483677a24ed"; // ex : "a1b2c3d4-e5f6-...."
 
+// ====== EMAILJS — e-mail de confirmation AUTOMATIQUE à la cliente ======
+// (aux couleurs de la marque, avec récap + délai 24h)
+// Réglage en ~10 min sur https://www.emailjs.com (gratuit) :
+//   1) Créez un compte, puis "Add New Service" -> connectez votre Gmail.
+//   2) "Email Templates" -> créez un modèle, collez le HTML que je vous ai fourni,
+//      et dans le champ "To Email" du modèle mettez : {{to_email}}
+//   3) Récupérez les 3 identifiants et collez-les ci-dessous :
+//        - Public Key  (page Account)
+//        - Service ID  (page Email Services)
+//        - Template ID (page Email Templates)
+// Tant que ces champs sont vides, rien ne casse : l'e-mail auto est simplement désactivé.
+const EMAILJS_PUBLIC_KEY  = "fpu2VTJXNsCDti3-d"; // ex : "AbCdEf123..."
+const EMAILJS_SERVICE_ID  = "service_mdybkir"; // ex : "service_xxxx"
+const EMAILJS_TEMPLATE_ID = "template_cpuy6rs"; // ex : "template_xxxx"
+
+if (EMAILJS_PUBLIC_KEY && window.emailjs) {
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
 
 // --- Vos disponibilités, par jour de la semaine ---
 // 0 = dimanche, 1 = lundi, 2 = mardi, 3 = mercredi, 4 = jeudi, 5 = vendredi, 6 = samedi
@@ -948,6 +968,23 @@ form.addEventListener('submit', async (e) => {
     } catch (err) {
       // En cas d'échec réseau, la confirmation WhatsApp reste disponible.
       console.warn('Notification e-mail non envoyée :', err);
+    }
+  }
+
+  // E-mail de confirmation AUTOMATIQUE à la cliente (habillé, via EmailJS)
+  if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && window.emailjs){
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: data.email,
+        prenom: data.prenom,
+        prestation: data.presta,
+        date: data.date,
+        creneau: data.creneau,
+        secteur: data.secteur,
+        adresse: data.lieu
+      });
+    } catch (err) {
+      console.warn('E-mail de confirmation cliente non envoyé :', err);
     }
   }
 
