@@ -631,7 +631,7 @@ const OWNER_EMAIL = "meyophiy@gmail.com";
 // redirigée vers WhatsApp pour finaliser. Dès que la clé est remplie, VOUS
 // recevez en plus un e-mail détaillé à chaque demande, avec un bouton
 // "Confirmer ce RDV" qui ouvre l'e-mail de confirmation déjà rédigé pour elle.
-const WEB3FORMS_KEY = "49e1a2b3-1888-497c-80ba-d483677a24ed"; // ex : "a1b2c3d4-e5f6-...."
+const WEB3FORMS_KEY = ""; // ex : "a1b2c3d4-e5f6-...."
 
 // ====== EMAILJS — e-mail de confirmation AUTOMATIQUE à la cliente ======
 // (aux couleurs de la marque, avec récap + délai 24h)
@@ -646,7 +646,8 @@ const WEB3FORMS_KEY = "49e1a2b3-1888-497c-80ba-d483677a24ed"; // ex : "a1b2c3d4-
 // Tant que ces champs sont vides, rien ne casse : l'e-mail auto est simplement désactivé.
 const EMAILJS_PUBLIC_KEY  = "fpu2VTJXNsCDti3-d"; // ex : "AbCdEf123..."
 const EMAILJS_SERVICE_ID  = "service_mdybkir"; // ex : "service_xxxx"
-const EMAILJS_TEMPLATE_ID = "template_cpuy6rs"; // ex : "template_xxxx"
+const EMAILJS_TEMPLATE_ID = "template_cpuy6rs"; // ex : "template_xxxx"  (modèle CLIENTE)
+const EMAILJS_TEMPLATE_OWNER_ID = "template_9usmxi4"; // ex : "template_yyyy"  (modèle NOTIF pour VOUS, avec bouton Confirmer)
 
 if (EMAILJS_PUBLIC_KEY && window.emailjs) {
   emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
@@ -941,6 +942,26 @@ form.addEventListener('submit', async (e) => {
     + `Message : ${encodeURIComponent(data.msg)}`;
   document.getElementById('waBtn').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${txt}`;
 
+  // Lien "Confirmer le rendez-vous" : ouvre un e-mail de confirmation déjà
+  // entièrement rédigé, adressé à la cliente. Vous n'avez plus qu'à l'envoyer.
+  const sujetConf = `Votre rendez-vous est confirmé — M&E Yiophy`;
+  const corpsConf =
+      `Bonjour ${data.prenom},%0D%0A%0D%0A`
+    + `C'est avec grand plaisir que je vous confirme votre rendez-vous :%0D%0A%0D%0A`
+    + `• Prestation : ${data.presta}%0D%0A`
+    + `• Date : ${data.date}%0D%0A`
+    + `• Créneau : ${data.creneau}%0D%0A`
+    + `• Secteur : ${data.secteur}%0D%0A`
+    + `• Adresse : ${data.lieu}%0D%0A%0D%0A`
+    + `Je serai ravie de vous sublimer pour cette occasion. Pour toute question `
+    + `ou un souhait particulier (inspiration, teinte, timing), répondez-moi `
+    + `directement ou écrivez-moi sur WhatsApp au 06 28 96 61 70.%0D%0A%0D%0A`
+    + `À très bientôt,%0D%0AÉvelyne — M&E Yiophy`;
+  const confirmLink =
+      `mailto:${encodeURIComponent(data.email)}`
+    + `?subject=${encodeURIComponent(sujetConf)}`
+    + `&body=${corpsConf}`;
+
   // Notification par e-mail vers la maquilleuse (si une clé Web3Forms est configurée)
   if (WEB3FORMS_KEY){
     try {
@@ -985,6 +1006,27 @@ form.addEventListener('submit', async (e) => {
       });
     } catch (err) {
       console.warn('E-mail de confirmation cliente non envoyé :', err);
+    }
+  }
+
+  // Notification HABILLÉE vers VOUS (la maquilleuse), avec bouton "Confirmer" (via EmailJS)
+  if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_OWNER_ID && window.emailjs){
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_OWNER_ID, {
+        to_owner: OWNER_EMAIL,
+        prenom: data.prenom,
+        prestation: data.presta,
+        date: data.date,
+        creneau: data.creneau,
+        secteur: data.secteur,
+        adresse: data.lieu,
+        telephone: data.tel,
+        client_email: data.email,
+        message: data.msg,
+        confirm_link: confirmLink
+      });
+    } catch (err) {
+      console.warn('Notification habillée non envoyée :', err);
     }
   }
 
